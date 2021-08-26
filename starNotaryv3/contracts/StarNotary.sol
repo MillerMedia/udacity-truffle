@@ -5,7 +5,6 @@ import "../node_modules/openzeppelin-solidity/contracts/token/ERC721/ERC721.sol"
 
 // StarNotary Contract declaration inheritance the ERC721 openzeppelin implementation
 contract StarNotary is ERC721 {
-
     // Star data
     struct Star {
         string name;
@@ -14,8 +13,7 @@ contract StarNotary is ERC721 {
     // Implement Task 1 Add a name and symbol properties
     // name: Is a short name to your token
     // symbol: Is a short string like 'USD' -> 'American Dollar'
-    string public name = "Matt's Star Token";
-    string public symbol = "MST";
+    constructor() ERC721("Matt's Star Token", "MST") { }
 
     // mapping the Star with the Owner Address
     mapping(uint256 => Star) public tokenIdToStarInfo;
@@ -39,7 +37,7 @@ contract StarNotary is ERC721 {
 
     // Function that allows you to convert an address into a payable address
     function _make_payable(address x) internal pure returns (address payable) {
-        return address(uint160(x));
+        return payable(x);
     }
 
     function buyStar(uint256 _tokenId) public  payable {
@@ -47,16 +45,19 @@ contract StarNotary is ERC721 {
         uint256 starCost = starsForSale[_tokenId];
         address ownerAddress = ownerOf(_tokenId);
         require(msg.value > starCost, "You need to have enough Ether");
-        _transferFrom(ownerAddress, msg.sender, _tokenId); // We can't use _addTokenTo or_removeTokenFrom functions, now we have to use _transferFrom
+        transferFrom(ownerAddress, msg.sender, _tokenId); // We can't use _addTokenTo or_removeTokenFrom functions, now we have to use _transferFrom
         address payable ownerAddressPayable = _make_payable(ownerAddress); // We need to make this conversion to be able to use transfer() function to transfer ethers
         ownerAddressPayable.transfer(starCost);
         if(msg.value > starCost) {
-            msg.sender.transfer(msg.value - starCost);
+            payable(msg.sender).transfer(msg.value - starCost);
         }
     }
 
     // Implement Task 1 lookUptokenIdToStarInfo
-    function lookUptokenIdToStarInfo (uint _tokenId) public view returns (string memory) {
+    function lookUptokenIdToStarInfo(uint _tokenId) public view returns (string memory) {
+        // Need to handle if the star does not have a name
+        require(bytes(tokenIdToStarInfo[_tokenId].name).length > 0, "Star does not have a name");
+
         //1. You should return the Star saved in tokenIdToStarInfo mapping
         return tokenIdToStarInfo[_tokenId].name;
     }
@@ -72,8 +73,8 @@ contract StarNotary is ERC721 {
         address tokenId2Owner = ownerOf(_tokenId2);
 
         //4. Use _transferFrom function to exchange the tokens.
-        _transferFrom(tokenId1Owner, tokenId2Owner, _tokenId1);
-        _transferFrom(tokenId2Owner, tokenId1Owner, _tokenId2);
+        transferFrom(tokenId1Owner, tokenId2Owner, _tokenId1);
+        transferFrom(tokenId2Owner, tokenId1Owner, _tokenId2);
     }
 
     // Implement Task 1 Transfer Stars
@@ -82,7 +83,7 @@ contract StarNotary is ERC721 {
         require(ownerOf(_tokenId) == msg.sender, "Sender is not the owner");
 
         //2. Use the transferFrom(from, to, tokenId); function to transfer the Star
-        _transferFrom(msg.sender, _to1, _tokenId);
+        transferFrom(msg.sender, _to1, _tokenId);
     }
 
 }
